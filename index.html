@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>טופס חתימה על קבלת ביגוד - UFC GYM</title>
+  <style>
+    :root{--accent:#d32f2f}
+    body{font-family:Arial, Helvetica, sans-serif;background:#f3f3f3;margin:0;color:#111}
+    .container{max-width:860px;margin:28px auto;background:#fff;border:2px solid var(--accent);border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,.08)}
+    header{background:#000;color:#fff;border-bottom:2px solid var(--accent);padding:18px;text-align:center}
+    header h1{margin:0;font-size:22px}
+    header small{color:#bbb}
+    form{padding:18px}
+    .section{margin:18px 0}
+    .title{color:var(--accent);font-weight:800;border-right:5px solid var(--accent);padding-right:6px;margin-bottom:8px}
+    .field{margin:10px 0}
+    label{display:block;font-weight:700;margin-bottom:4px}
+    input{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px}
+    table{width:100%;border-collapse:collapse}
+    th,td{border:1px solid #e5e5e5;padding:8px;text-align:right}
+    th{background:#fafafa}
+    .signature{border:2px dashed var(--accent);height:200px;border-radius:12px;background:#fff}
+    .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    button{background:var(--accent);color:#fff;border:none;padding:12px 16px;border-radius:10px;font-weight:800;cursor:pointer}
+    button.secondary{background:#fff;color:#000;border:2px solid var(--accent)}
+    @media print{ .btns{display:none} .container{box-shadow:none;border:none} header{border:none} }
+  </style>
+
+  <!-- ספריות חיצוניות -->
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+</head>
+
+<body>
+  <div class="container" id="card">
+    <header>
+      <h1>טופס חתימה על קבלת ביגוד<br><small>UFC GYM</small></h1>
+    </header>
+
+    <form id="f">
+      <p>עובד/ת יקר/ה, בחתימתך על טופס זה, הינך מאשר/ת כי קיבלת מהחברה חולצות ועליוניות לצורך עבודתך השוטפת במשמרות חדר כושר ובאימונים אישיים.</p>
+
+      <div class="section">
+        <div class="title">פרטי פריטים ומידות</div>
+        <div class="field"><label>חולצות קצרות – כמות</label><input type="number" name="shirts_qty" min="0" placeholder="לדוג׳: 2"></div>
+        <div class="field"><label>מידת חולצות</label><input type="text" name="shirts_size" placeholder="S / M / L / XL"></div>
+        <div class="field"><label>עליוניות – כמות</label><input type="number" name="jacket_qty" min="0" placeholder="לדוג׳: 1"></div>
+        <div class="field"><label>מידת עליונית</label><input type="text" name="jacket_size" placeholder="מידה"></div>
+      </div>
+
+      <div class="section">
+        <div class="title">תעריפי חיוב במקרה של אי-החזרה</div>
+        <table>
+          <tr><th>פריט</th><th>מחיר בש"ח</th></tr>
+          <tr><td>חולצה גברים</td><td>49</td></tr>
+          <tr><td>חולצה נשים</td><td>70</td></tr>
+          <tr><td>סווטשירט גברים</td><td>105</td></tr>
+          <tr><td>סווטשירט נשים</td><td>129</td></tr>
+        </table>
+      </div>
+
+      <div class="field">
+        <label><input type="checkbox" id="consent"> אני מאשר/ת לנכות משכרי האחרון את הסכום הנ"ל במידה ולא אחזיר את הפריטים בעת סיום עבודתי.</label>
+      </div>
+
+      <div class="section">
+        <div class="title">פרטים אישיים</div>
+        <div class="field"><label>תאריך</label><input type="date" name="date" id="date"></div>
+        <div class="field"><label>מועדון</label><input type="text" name="club" placeholder="לדוג׳: כפר סבא"></div>
+        <div class="field"><label>שם העובד/ת</label><input type="text" name="employee"></div>
+        <div class="field"><label>ת.ז</label><input type="text" name="idnum" inputmode="numeric"></div>
+        <div class="field"><label>שם המנהל/ת</label><input type="text" name="manager"></div>
+      </div>
+
+      <div class="section">
+        <div class="title">חתימת העובד/ת</div>
+        <canvas id="sig" class="signature"></canvas>
+        <div class="btns"><button type="button" class="secondary" id="clear">נקה חתימה</button></div>
+      </div>
+
+      <div class="btns">
+        <button type="button" id="pdf">הורד כ-PDF</button>
+        <button type="reset" class="secondary">איפוס טופס</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="printArea" style="position:fixed; left:-9999px; top:0; width:794px; background:#fff; padding:24px; font-family:Arial, Helvetica, sans-serif;"></div>
+
+  <script>
+    // הגדרת חתימה
+    const canvas = document.getElementById('sig');
+    const pad = new SignaturePad(canvas, {backgroundColor:'rgba(255,255,255,1)'});
+
+    function resizeCanvas(){
+      const ratio = Math.max(window.devicePixelRatio || 1, 1);
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * ratio;
+      canvas.height = rect.height * ratio;
+      canvas.getContext('2d').scale(ratio, ratio);
+      pad.clear();
+    }
+    window.addEventListener('resize', resizeCanvas); resizeCanvas();
+    document.getElementById('clear').addEventListener('click', () => pad.clear());
+
+    // תאריך אוטומטי
+    const df = document.getElementById('date');
+    if(!df.value){
+      const t=new Date();
+      df.value = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+    }
+
+    // ייצוא ל-PDF
+    document.getElementById('pdf').addEventListener('click', async () => {
+      if(pad.isEmpty()){ alert('נא לחתום לפני הורדה'); return; }
+      if(!document.getElementById('consent').checked){ alert('נא לאשר את סעיף הניכוי'); return; }
+
+      const data = Object.fromEntries(new FormData(document.getElementById('f')).entries());
+      const sigImg = pad.toDataURL('image/png');
+      const area = document.getElementById('printArea');
+
+      area.innerHTML = `
+        <div style="text-align:center; border-bottom:3px solid #d32f2f; padding-bottom:8px; margin-bottom:12px">
+          <div style="font-size:22px; font-weight:900">טופס חתימה על קבלת ביגוד</div>
+          <div style="font-size:14px; color:#555">UFC GYM</div>
+        </div>
+        <div style="margin:8px 0 14px">עובד/ת יקר/ה, בחתימתך על טופס זה, הינך מאשר/ת כי קיבלת מהחברה חולצות ועליוניות לצורך עבודתך השוטפת במשמרות חדר כושר ובאימונים אישיים.</div>
+        <table style="width:100%; border-collapse:collapse; margin:12px 0">
+          <tr><th style="border:1px solid #ddd; padding:6px; background:#fafafa; text-align:right">פריט</th><th style="border:1px solid #ddd; padding:6px; background:#fafafa; text-align:right">כמות/מידה</th></tr>
+          <tr><td style="border:1px solid #eee; padding:6px">חולצות קצרות – כמות</td><td style="border:1px solid #eee; padding:6px">${data.shirts_qty||''}</td></tr>
+          <tr><td style="border:1px solid #eee; padding:6px">מידת חולצות</td><td style="border:1px solid #eee; padding:6px">${data.shirts_size||''}</td></tr>
+          <tr><td style="border:1px solid #eee; padding:6px">עליוניות – כמות</td><td style="border:1px solid #eee; padding:6px">${data.jacket_qty||''}</td></tr>
+          <tr><td style="border:1px solid #eee; padding:6px">מידת עליונית</td><td style="border:1px solid #eee; padding:6px">${data.jacket_size||''}</td></tr>
+        </table>
+        <div style="margin:6px 0"><strong>תעריפי חיוב במקרה של אי-החזרה:</strong> חולצה גברים 49 ₪ | חולצה נשים 70 ₪ | סווטשירט גברים 105 ₪ | סווטשירט נשים 129 ₪</div>
+        <table style="width:100%; border-collapse:collapse; margin:12px 0">
+          <tr><th style="border:1px solid #ddd; padding:6px; background:#fafafa; text-align:right">שדה</th><th style="border:1px solid #ddd; padding:6px; background:#fafafa; text-align:right">ערך</th></tr>
+          <tr><td style="border:1px solid #eee; padding:6px">תאריך</td><td style="border:1px solid #eee; padding:6px">${data.date||''}</td></tr>
+          <tr><td style="border:1px solid #eee; padding:6px">מועדון</td><td style="border:1px solid #eee; padding:6px">${data.club||''}</td></tr>
+          <tr><td style="border:1px solid #eee; padding:6px">שם העובד/ת</td><td style="border:1px solid #eee; padding:6px">${data.employee||''}</td></tr>
+          <tr><td style="border:1px solid #eee; padding:6px">ת.ז</td><td style="border:1px solid #eee; padding:6px">${data.idnum||''}</td></tr>
+          <tr><td style="border:1px solid #eee; padding:6px">שם המנהל/ת</td><td style="border:1px solid #eee; padding:6px">${data.manager||''}</td></tr>
+        </table>
+        <div style="margin:10px 0"><strong>חתימה:</strong></div>
+        <img src="${sigImg}" style="width:300px; border:1px solid #ddd; padding:4px"/>
+      `;
+
+      const node = area;
+      const canvasImg = await html2canvas(node, {scale:3, backgroundColor:'#ffffff'});
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({unit:'mm', format:'a4'});
+      const imgData = canvasImg.toDataURL('image/png');
+      const pageWidth = 210, margin = 10;
+      const imgWidth = pageWidth - margin*2;
+      const imgHeight = canvasImg.height * imgWidth / canvasImg.width;
+      pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
+      pdf.save('טופס_קבלת_ביגוד_UFC_GYM.pdf');
+    });
+  </script>
+</body>
+</html>
